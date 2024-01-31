@@ -8,24 +8,40 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ParkingLot extends ObservableParkingLot{
+public class ObservableParkingLot {
     private final Map<Integer, Car> parkingSlots;
     private final int capacity;
     private int nextSlotAvailable;
-    private final List<ParkingLotListener> listeners;
     private boolean isLotFull;
+    private final List<ParkingLotListener> listeners;
 
-    public ParkingLot(int capacity) {
-        super(capacity);
+    public ObservableParkingLot(int capacity) {
+        if (capacity < 1) {
+            throw new IllegalArgumentException("Capacity must be greater than 0");
+        }
         this.capacity = capacity;
         this.parkingSlots = new HashMap<>();
         this.nextSlotAvailable = 1;
         this.listeners = new ArrayList<>();
     }
 
+    public void addListener(ParkingLotListener listener) {
+        this.listeners.add(listener);
+    }
 
+    void notifyListenersFull() {
+        for (ParkingLotListener listener : listeners) {
+            listener.notifyFull();
+        }
+    }
 
-    public String park(Car car, int slot) {
+    void notifyListenersAvailable() {
+        for (ParkingLotListener listener : listeners) {
+            listener.notifyAvailable();
+        }
+    }
+
+    public String park(Car car) {
         checkForSameCarParked(car);
 
         if (isLotFull) {
@@ -34,10 +50,12 @@ public class ParkingLot extends ObservableParkingLot{
             notifyListenersAvailable();
         }
 
-        if (slot != -1 && parkingSlots.get(slot) == null) {
+        Integer slot = getEmptySlot().getOrDefault(true, null);
+
+        if (slot != null) {
             parkingSlots.put(slot, car);
             notifyIfLotIsFullOrAvailable();
-            return Integer.toString(slot);
+            return slot.toString();
         }
 
         if (isAtFullCapacity()) {
@@ -51,14 +69,13 @@ public class ParkingLot extends ObservableParkingLot{
         return Integer.toString(this.nextSlotAvailable++);
     }
 
-
-
     public boolean isCarParked(Car carToBeChecked) {
         for (Car car : parkingSlots.values()) {
             if (car != null && car.equals(carToBeChecked)) {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -116,5 +133,14 @@ public class ParkingLot extends ObservableParkingLot{
         } else {
             System.out.println("Parking lot is available!");
         }
+    }
+
+
+    public Map<Integer, Car> getParkingSlots() {
+        return parkingSlots;
+    }
+
+    public int getCapacity() {
+        return capacity;
     }
 }
